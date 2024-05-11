@@ -96,10 +96,12 @@ func buildClusters(tags []ObjectMessageDate, commits []ObjectMessageDate) ([]str
 func pageOutput(sortedTagNames []string, clusters map[string][]string) {
 	maxTagNameLength := internal.MaxStringLength(sortedTagNames)
 	padding := strings.Repeat(" ", maxTagNameLength+1)
+	// tagFuncColored := color.New(color.FgYellow).SprintFunc()
 	cmd := exec.Command("less")
 	var lines []string
 	for _, tagName := range sortedTagNames {
 		for commitIndex, commitMessage := range clusters[tagName] {
+			// 	coloredTagName := tagFuncColored(tagName)
 			if commitIndex == 0 {
 				lines = append(lines, strings.Join([]string{tagName + strings.Repeat(" ", len(padding)-len(tagName)), commitMessage}, " "))
 			} else {
