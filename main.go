@@ -50,7 +50,7 @@ func getTags(r *git.Repository) []ObjectMessageDate {
 
 func isConventional(commitMsg string, prefixes []string) bool {
 	for _, pref := range prefixes {
-		if strings.HasPrefix(commitMsg, pref) || strings.HasPrefix(commitMsg, strings.ToLower(pref)) {
+		if strings.HasPrefix(strings.ToLower(commitMsg), strings.ToLower(pref)) {
 			return true
 		}
 	}
@@ -78,12 +78,14 @@ func buildClusters(tags []ObjectMessageDate, commits []ObjectMessageDate) ([]str
 	for tagIndex, tag := range tags {
 		order = append(order, tag.content)
 		for _, commit := range commits {
-			if commit.date.After(tag.date) {
-				if tagIndex == 0 {
-					clusters["untagged"] = append(clusters["untagged"], commit.content)
-				} else {
-					clusters[tag.content] = append(clusters[tag.content], commit.content)
-				}
+			if tagIndex == len(tags)-1 {
+				clusters[tag.content] = append(clusters[tag.content], commit.content)
+				continue
+			}
+			predecessorTag := tags[tagIndex+1]
+			if (commit.date.Before(tag.date) || commit.date.Equal(tag.date)) && commit.date.After(predecessorTag.date) {
+				clusters[tag.content] = append(clusters[tag.content], commit.content)
+				continue
 			}
 		}
 	}
