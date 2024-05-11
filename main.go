@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	config "taglog/internal"
+	internal "taglog/internal"
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -41,8 +41,9 @@ func getTags(r *git.Repository) []ObjectMessageDate {
 	tagRefIter.ForEach(func(ref *plumbing.Reference) error {
 		commit, _ := r.CommitObject(ref.Hash())
 		date := commit.Author.When
-		msg := ref.Name()
-		tags = append(tags, ObjectMessageDate{date: date, content: msg.String()})
+		msgPathParts := strings.Split(ref.Name().String(), "/")
+		msg := msgPathParts[len(msgPathParts)-1]
+		tags = append(tags, ObjectMessageDate{date: date, content: msg})
 		return nil
 	})
 	return sortObjects(tags)
@@ -93,18 +94,20 @@ func buildClusters(tags []ObjectMessageDate, commits []ObjectMessageDate) ([]str
 }
 
 func pageOutput(sortedTagNames []string, clusters map[string][]string) {
+	maxTagNameLength := internal.MaxStringLength(sortedTagNames)
+	padding := strings.Repeat(" ", maxTagNameLength+1)
 	cmd := exec.Command("less")
 	var lines []string
 	for _, tagName := range sortedTagNames {
 		for commitIndex, commitMessage := range clusters[tagName] {
 			if commitIndex == 0 {
-				lines = append(lines, strings.Join([]string{tagName, commitMessage}, " "))
+				lines = append(lines, strings.Join([]string{tagName + strings.Repeat(" ", len(padding)-len(tagName)), commitMessage}, " "))
 			} else {
-				lines = append(lines, strings.Join([]string{"", commitMessage}, " "))
+				lines = append(lines, strings.Join([]string{padding, commitMessage}, " "))
 			}
 		}
 	}
-	cmd.Stdin = strings.NewReader(strings.Join(lines, "\n"))
+	cmd.Stdin = strings.NewReader(strings.Join(lines, ""))
 	cmd.Stdout = os.Stdout
 	err := cmd.Run()
 	if err != nil {
@@ -116,7 +119,7 @@ func main() {
 	configPath := flag.String("config", "./taglog.json", "Path to the config list with prefixes")
 	repoPath := flag.String("repo", ".", "Path to the repo")
 	flag.Parse()
-	prefixes := config.LoadConfig(configPath)
+	prefixes := internal.LoadConfig(configPath)
 
 	repo, err := git.PlainOpen(*repoPath)
 	if err != nil {
